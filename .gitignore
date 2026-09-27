@@ -1,44 +1,44 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Monorepo root .gitignore
+# Scope: global patterns shared across all workspaces (frontend/, backend/, etc.).
+# Workspace-specific ignores (e.g. Angular cache) live in each workspace's own .gitignore
+# (see frontend/.gitignore).
 
-# Compiled output
-/dist
-/tmp
-/out-tsc
-/bazel-out
+# Dependencies (any workspace, any depth)
+node_modules/
 
-# Node
-/node_modules
-npm-debug.log
-yarn-error.log
+# Build outputs
+dist/
+build/
+out-tsc/
 
-# IDEs and editors
-.idea/
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+# Angular cache (root-level fallback; frontend/ has its own entry too)
+.angular/cache/
 
-# Visual Studio Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/mcp.json
-.history/*
+# Python (backend/)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
 
-# Miscellaneous
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
-__screenshots__/
+# Local SQLite database + secrets
+*.db
+.env
 
-# System files
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# Editor temp files
+*.swp
+*.swo
+*~
+.idea/

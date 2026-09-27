@@ -1,0 +1,190 @@
+<div class="room">
+  <header class="hero">
+    <div class="hero__lead">
+      <p class="wordmark">AgentOps Observatory</p>
+      <h1 class="hero__title">Tu equipo de agentes</h1>
+      @if (totalExecutions() > 0) {
+        <p class="hero__summary">{{ summary() }}</p>
+      } @else {
+        <p class="hero__summary">Aún no hay agentes en marcha. Encarga la primera tarea.</p>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="btn btn--soft"
+      (click)="refreshExecutions()"
+      [disabled]="loading()"
+    >
+      {{ loading() ? 'Actualizando…' : 'Actualizar' }}
+    </button>
+  </header>
+
+  <section class="stats" aria-label="Resumen">
+    <div class="stat">
+      <span class="stat__num tnum">{{ totalExecutions() }}</span>
+      <span class="stat__lbl">en total</span>
+    </div>
+    <div class="stat">
+      <span class="stat__num tnum stat__num--running">{{ runningExecutions() }}</span>
+      <span class="stat__lbl">trabajando</span>
+    </div>
+    <div class="stat">
+      <span class="stat__num tnum stat__num--completed">{{ completedExecutions() }}</span>
+      <span class="stat__lbl">completadas</span>
+    </div>
+    <div class="stat">
+      <span class="stat__num tnum stat__num--failed">{{ failedExecutions() }}</span>
+      <span class="stat__lbl">con fallo</span>
+    </div>
+    <div class="stat stat--cost">
+      <span class="stat__num tnum">{{ eur(totalCost()) }} €</span>
+      <span class="stat__lbl">gastado</span>
+    </div>
+  </section>
+
+  <div class="layout">
+    <section class="compose">
+      <h2 class="compose__title">Encargar una tarea</h2>
+
+      <form class="compose__form" [formGroup]="executionForm" (ngSubmit)="createExecution()">
+        <label class="field">
+          <span class="field__lbl">¿Qué agente?</span>
+          <input type="text" formControlName="agent_name" placeholder="recon-agent" />
+        </label>
+
+        <label class="field">
+          <span class="field__lbl">¿Con qué modelo?</span>
+          <input type="text" formControlName="model" placeholder="claude-opus-5" />
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field__lbl">Prioridad</span>
+            <select formControlName="priority">
+              <option value="low">Baja</option>
+              <option value="medium">Media</option>
+              <option value="high">Alta</option>
+              <option value="critical">Crítica</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field__lbl">Tipo de tarea</span>
+            <select formControlName="task_type">
+              <option value="security_analysis">Análisis de seguridad</option>
+              <option value="summarization">Resumen</option>
+              <option value="classification">Clasificación</option>
+              <option value="code_review">Revisión de código</option>
+              <option value="incident_triage">Triaje de incidente</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__lbl">¿Qué tiene que hacer?</span>
+          <textarea
+            formControlName="input_text"
+            rows="4"
+            placeholder="Cuéntale al agente qué necesitas que haga…"
+          ></textarea>
+        </label>
+
+        <button type="submit" class="btn btn--brand" [disabled]="submitting()">
+          {{ submitting() ? 'Encargando…' : 'Encargar tarea' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="feed">
+      <h2 class="feed__title">Actividad</h2>
+
+      @if (loading()) {
+        <p class="note">Poniéndonos al día con el backend…</p>
+      } @else if (error()) {
+        <p class="note note--warn">{{ error() }}</p>
+      } @else if (executions().length === 0) {
+        <p class="note">Todavía nada por aquí. Cuando encargues una tarea, aparecerá arriba.</p>
+      } @else {
+        <ul class="agents">
+          @for (execution of executions(); track execution.id) {
+            <li class="agent" [class]="'agent agent--' + execution.status">
+              <span class="agent__avatar" aria-hidden="true">
+                {{ agentInitial(execution.agent_name) }}
+              </span>
+
+              <div class="agent__body">
+                <div class="agent__top">
+                  <span class="agent__name">{{ execution.agent_name }}</span>
+                  <span class="chip chip--status">{{ statusLabel(execution.status) }}</span>
+                </div>
+
+                <p class="agent__task">{{ execution.input_text }}</p>
+
+                <p class="agent__meta">
+                  {{ taskTypeLabel(execution.task_type) }} con {{ execution.model }}, prioridad
+                  {{ priorityLabel(execution.priority).toLowerCase() }}. Empezó
+                  {{ relativeTime(execution.created_at) }}.
+                </p>
+
+                @if (outcome(execution); as line) {
+                  <p class="agent__outcome">{{ line }}</p>
+                }
+
+                @if (execution.input_tokens !== null || execution.output_tokens !== null) {
+                  <p class="agent__tokens tnum">
+                    @if (execution.input_tokens !== null) {
+                      <span>{{ fmtTokens(execution.input_tokens) }} tokens de entrada</span>
+                    }
+                    @if (execution.output_tokens !== null) {
+                      <span>{{ fmtTokens(execution.output_tokens) }} de salida</span>
+                    }
+                  </p>
+                }
+
+                @if (execution.status === 'pending' || execution.status === 'running') {
+                  <div class="agent__actions">
+                    @if (execution.status === 'pending') {
+                      <button
+                        type="button"
+                        class="btn btn--sm btn--tint-brand"
+                        (click)="changeStatus(execution, 'running')"
+                      >
+                        Poner a trabajar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn--sm btn--soft"
+                        (click)="changeStatus(execution, 'cancelled')"
+                      >
+                        Cancelar
+                      </button>
+                    }
+                    @if (execution.status === 'running') {
+                      <button
+                        type="button"
+                        class="btn btn--sm btn--tint-ok"
+                        (click)="changeStatus(execution, 'completed')"
+                      >
+                        Dar por terminada
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn--sm btn--soft"
+                        (click)="changeStatus(execution, 'failed')"
+                      >
+                        Marcar que falló
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+
+  <footer class="foot">Hecho con Angular y FastAPI para observar agentes de IA.</footer>
+</div>

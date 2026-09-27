@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# Put the backend root on sys.path so tests import `app.*` and `tests.*`
+# without an editable install.
+pythonpath = ["."]
+testpaths = ["tests"]
