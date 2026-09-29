@@ -13,6 +13,7 @@ from app.schemas.execution import (
     ExecutionStatus,
 )
 from app.schemas.execution import UpdateExecutionStatusRequest
+from app.services.execution_service import ExecutionNotFound, InvalidTransition, change_status
 
 router = APIRouter()
 
@@ -79,67 +80,16 @@ def get_execution(
         )
 
     return execution
-@router.patch(
-    "/{execution_id}/status",
-    response_model=ExecutionResponse,
-)
+@router.patch("/{execution_id}/status", response_model=ExecutionResponse)
 def update_execution_status(
     execution_id: UUID,
     payload: UpdateExecutionStatusRequest,
     db: Session = Depends(get_db),
-) -> Execution:
+) -> Execution: 
     """Update an execution status while enforcing its lifecycle."""
-
-    execution = db.get(Execution, str(execution_id))
-
-    if execution is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Execution not found",
-        )
-
-    allowed_transitions = {
-        "pending": {"running", "cancelled"},
-        "running": {"completed", "failed", "cancelled"},
-        "completed": set(),
-        "failed": set(),
-        "cancelled": set(),
-    }
-
-    current_status = execution.status
-    next_status = payload.status.value
-
-    if next_status not in allowed_transitions[current_status]:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Cannot change status from "
-                f"{current_status} to {next_status}"
-            ),
-        )
-
-    now = datetime.now(timezone.utc)
-
-    execution.status = next_status
-
-    if next_status == "running":
-        execution.started_at = now
-
-    if next_status in {"completed", "failed", "cancelled"}:
-        execution.finished_at = now
-
-    # Metering is only recorded on a successful finish: a completed run is the
-    # only moment a real agent knows its token usage and cost.
-    if next_status == "completed":
-        execution.input_tokens = payload.input_tokens
-        execution.output_tokens = payload.output_tokens
-        execution.cost = payload.cost
-
-    if next_status == "failed":
-        execution.error_type = payload.error_type
-        execution.error_retryable = payload.error_retryable
-
-    db.commit()
-    db.refresh(execution)
-
-    return execution
+    try:
+        return change_status(db, execution_id, payload)
+    except ExecutionNotFound:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    except InvalidTransition as exc:
+        raise HTTPException(status_code=409, detail=str(exc))

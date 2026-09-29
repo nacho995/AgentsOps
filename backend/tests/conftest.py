@@ -12,7 +12,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.database import Base, get_db
@@ -48,6 +48,25 @@ def client() -> Iterator[TestClient]:
         yield test_client
 
     app.dependency_overrides.clear()
+    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
+
+
+@pytest.fixture
+def db_session() -> Iterator[Session]:
+    """Yield a session bound to an isolated in-memory database (no HTTP)."""
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    session = sessionmaker(bind=engine)()
+
+    yield session
+
+    session.close()
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
 
