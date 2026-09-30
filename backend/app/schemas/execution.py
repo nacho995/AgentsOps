@@ -94,6 +94,6 @@ class ExecutionResponse(BaseModel):
     finished_at: datetime | None = None
     input_tokens: int | None = None
     output_tokens: int | None = None
-    cost: float | None = None
+    cost: Decimal | None = None
     error_type: str | None = None
     error_retryable: bool | None = None

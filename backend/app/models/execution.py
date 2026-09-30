@@ -19,9 +19,9 @@ class Execution(Base):
     task_type: Mapped[str] = mapped_column(String(50), nullable=False)
     input_text: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     input_tokens: Mapped[int | None] = mapped_column(nullable=True)
     output_tokens: Mapped[int | None] = mapped_column(nullable=True)
     cost: Mapped[Decimal | None] = mapped_column(

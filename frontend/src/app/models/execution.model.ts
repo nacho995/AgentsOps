@@ -22,6 +22,7 @@ export interface AgentExecution {
   error_type: string | null;
   error_retryable: boolean | null;
 }
+export type ExecutionDto = Omit<AgentExecution, 'cost'> & { cost: string | null };
 
 export interface CreateExecutionRequest {
   agent_name: string;

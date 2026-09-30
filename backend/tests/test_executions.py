@@ -124,7 +124,7 @@ def test_complete_execution_records_metering(client) -> None:
     assert body["finished_at"] is not None
     assert body["input_tokens"] == 1200
     assert body["output_tokens"] == 350
-    assert body["cost"] == 0.0185
+    assert body["cost"] == "0.018500"
 
 
 def test_fail_execution_records_error_details(client) -> None:
