@@ -1,15 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.db.database import Base, engine
-from app.models.execution import Execution
 
 
 app = FastAPI(
     title="AgentOps Observatory API",
     version="0.1.0",
 )
-
-Base.metadata.create_all(bind=engine)
 
 # The Angular dev server can be reached as either host; allow both so a fresh
 # clone works without a CORS surprise.

@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
-from app.db.database import Base, SessionLocal, engine
+from app.db.database import SessionLocal
 from app.models.execution import Execution
 
 # A representative instruction per task type, so the board does not read as one
@@ -107,8 +107,6 @@ def _build_execution(row: dict) -> Execution:
 
 
 def main() -> None:
-    Base.metadata.create_all(bind=engine)
-
     session = SessionLocal()
     try:
         deleted = session.query(Execution).delete()
