@@ -1,8 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, Index, Numeric, String, Text
 
 from app.db.database import Base
 
@@ -11,6 +11,10 @@ class Execution(Base):
     """Database representation of one agent execution."""
 
     __tablename__ = "executions"
+
+    __table_args__ = (
+        Index("ix_executions_status_created_at", "status", "created_at"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     agent_name: Mapped[str] = mapped_column(String(100), nullable=False)
